@@ -103,9 +103,21 @@ export class AudioManager {
       l.osc.frequency.setTargetAtTime(l.base * (1 + n * 0.5), this.ctx.currentTime, 0.1);
     });
     // tire squeal based on steer + speed
-    const slip = Math.abs(car.steerAngle) * Math.abs(car.speed) / 10;
-    const screech = car.handbrake ? 0.12 : Math.min(0.08, slip * 0.02);
+    const slip = car.slip || 0;
+    const screech = car.handbrake ? 0.15 : Math.min(0.1, slip * 0.15 + (Math.abs(car.speed) > 15 && Math.abs(car.steerAngle) > 1 ? 0.05 : 0));
     this.tireGain.gain.setTargetAtTime(screech, this.ctx.currentTime, 0.05);
+  }
+  playGearShift() {
+    if (!this.initialized || !this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = 900;
+    const g = this.ctx.createGain();
+    g.gain.value = 0.08;
+    osc.connect(g).connect(this.fxBus);
+    osc.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.12);
+    osc.stop(this.ctx.currentTime + 0.12);
   }
   playCollision(intensity) {
     if (!this.initialized || !this.ctx) return;

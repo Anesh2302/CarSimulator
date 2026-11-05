@@ -165,6 +165,7 @@ export class Car {
 
     // tire grip / weight transfer / slip
     const turnSlip = Math.abs(this.steerAngle) * Math.abs(this.speed) / Math.max(1, spec.maxSpeed);
+    this.slip = turnSlip;
     const weightTransfer = Math.min(0.3, Math.abs(this.speed) / spec.maxSpeed * 0.25);
     const gripFactor = Math.max(0.4, 1 - turnSlip * 0.5 - (sim ? weightTransfer * 0.3 : weightTransfer * 0.15));
     // traction control
@@ -232,16 +233,20 @@ export class Car {
   }
 
   _updateGear() {
+    const prev = this.gear;
     const s = Math.abs(this.speed);
     const ms = this.spec.maxSpeed;
-    if (this.speed < -0.5) { this.gear = 0; return; } // R
-    if (s < 0.5) { this.gear = 1; } // N/1
+    if (this.speed < -0.5) { this.gear = 0; } // R
+    else if (s < 0.5) { this.gear = 1; }
     else if (s < ms * 0.25) this.gear = 1;
     else if (s < ms * 0.45) this.gear = 2;
     else if (s < ms * 0.65) this.gear = 3;
     else if (s < ms * 0.85) this.gear = 4;
     else this.gear = 5;
-    if (this.speed === 0 && !this.velocity.length()) this.gear = 1;
+    if (this.speed === 0) this.gear = 1;
+    if (prev !== this.gear && this.game.audio && this.game.audio.playGearShift) {
+      this.game.audio.playGearShift();
+    }
   }
 
   _maybeLoadModel() {
