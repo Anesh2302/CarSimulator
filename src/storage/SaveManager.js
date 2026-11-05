@@ -3,7 +3,7 @@ const PROGRESS_KEY = 'carsim_progress';
 
 export const SaveManager = {
   defaultSettings() {
-    return { graphics:'medium', shadows:true, touch:true, fov:75, volume:0.7, music:0.4, steerSensitivity:1.0 };
+    return { graphics:'medium', shadows:true, touch:true, fov:75, volume:0.7, music:0.4, steerSensitivity:1.0, physicsMode:'arcade', deadZone:0.08, invertSteer:false, invertPedals:false };
   },
   loadSettings() {
     try { const r = localStorage.getItem(SETTINGS_KEY); return r ? { ...this.defaultSettings(), ...JSON.parse(r) } : this.defaultSettings(); } catch { return this.defaultSettings(); }

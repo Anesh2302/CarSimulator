@@ -1,33 +1,23 @@
 # Completion Report
 
-## Status: Complete (working game)
+## Existing features preserved
+All baseline features remain working (build verified).
 
-## Delivered
-- Working 3D Car Simulator (Three.js + Vite)
-- Build passes: `npm run build`
-- Dev server runs: `npm run dev`
-- Controls, physics, collisions, camera modes tested in browser
-- Settings and progress persist via localStorage
+## New features
+- Blender/GLTF asset pipeline + placeholder model: COMPLETE (verified load)
+- Model manifest adapter: COMPLETE
+- Arcade/Simulation physics modes: COMPLETE (code + settings)
+- Game modes (Free Roam, Time Trial, Checkpoint, Parking, Vehicle Test): COMPLETE (verified finish)
+- Controller calibration UI + dead-zone/invert: COMPLETE (UI)
+- Graphics preset Ultra: COMPLETE
 
-## Feature checklist
-- [x] Realistic 3D vehicle + environment
-- [x] Smooth acceleration/braking/reverse/steering/physics
-- [x] Camera modes: cockpit, third-person, hood, cinematic
-- [x] Dashboard: speedometer, RPM, fuel, gear, damage
-- [x] Multiple cars with different handling/stats
-- [x] Open-world city, roads, highways, parking
-- [x] Traffic vehicles, pedestrians, signals
-- [x] Collision detection + damage
-- [x] Weather + day/night + lighting
-- [x] Engine/tire/environmental audio
-- [x] Missions, checkpoints, parking, races (checkpoint missions)
-- [x] Garage + selection + customization
-- [x] Keyboard, controller, mobile touch
-- [x] Settings graphics/audio/controls
-- [x] Save/load progress + settings
+## Status labels
+- Rapier physics integration: IN PROGRESS (not integrated)
+- Steering wheel hardware test: BLOCKED (no hardware)
+- High-quality Blender car models: BLOCKED (no external assets)
+- Traffic rules mode: NOT STARTED
+- Circuit racing mode: NOT STARTED
+- Advanced LOD/instancing: IN PROGRESS (documented)
 
-## Known limitations
-- Procedural low-poly assets
-- Synthesized audio
-- No multiplayer
-- Arcade physics (not full rigid-body)
+## Build
+`npm run build` succeeds.

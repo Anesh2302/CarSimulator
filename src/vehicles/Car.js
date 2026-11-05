@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { assetLoader } from '../assets/AssetLoader.js';
+import { CAR_MODELS } from '../assets/CarManifest.js';
 
 export const CAR_SPECS = {
   sport: { name:'Sport GT', color:0xe53935, maxSpeed:42, accel:18, brake:28, steer:2.2, mass:1200, fuel:100, handling:0.9 },
@@ -17,6 +19,7 @@ export class Car {
     this.bodyMesh = null;
     this.wheels = [];
     this._buildMesh();
+    this._maybeLoadModel();
 
     // physics state
     this.position = new THREE.Vector3();
@@ -64,7 +67,7 @@ export class Car {
       w.position.set(wp.x, 0.35, wp.z);
       w.castShadow = true;
       this.group.add(w);
-      this.wheels.push({ mesh: w, steer: wp.steer });
+      this.wheels.push({ mesh: w, node: w, steer: wp.steer });
     }
 
     // steering wheel (cockpit) - small mesh inside
@@ -73,6 +76,7 @@ export class Car {
     sw.rotation.x = Math.PI / 2;
     this.group.add(sw);
     this.steeringWheelMesh = sw;
+    this.steeringNode = sw;
   }
 
   spawn(pos) {
@@ -95,6 +99,7 @@ export class Car {
   update(dt, input, colliders) {
     const spec = this.spec;
     const steerSens = this.game.settings.steerSensitivity || 1;
+    const sim = this.game.settings.physicsMode === 'simulation';
 
     // fuel consumption
     if (this.fuel > 0) this.fuel -= Math.abs(this.speed) * 0.0008 * dt * 60;
@@ -110,8 +115,10 @@ export class Car {
     this.handbrake = !!input.handbrake;
 
     // steering
-    const steerTarget = steerInput * spec.steer * steerSens;
-    this.steerAngle += (steerTarget - this.steerAngle) * Math.min(1, dt * 8);
+    const steerLimit = sim ? spec.steer * 0.85 : spec.steer;
+    const steerTarget = steerInput * steerLimit * steerSens;
+    const steerRate = sim ? 6 : 8;
+    this.steerAngle += (steerTarget - this.steerAngle) * Math.min(1, dt * steerRate);
     // reduce steering at high speed
     const steerFactor = Math.max(0.3, 1 - Math.abs(this.speed) / spec.maxSpeed * 0.6);
     this.steerAngle *= steerFactor / Math.max(0.3, steerFactor); // no-op-ish; keep
@@ -126,21 +133,25 @@ export class Car {
     // longitudinal
     let accel = 0;
     if (throttle > 0) {
-      accel = spec.accel * throttle;
+      accel = spec.accel * throttle * (sim ? 0.9 : 1.0);
+      // traction control: limit accel at high speed
+      if (sim && this.speed > spec.maxSpeed * 0.75) accel *= 0.6;
       if (input.boost && this.boost > 0) { accel *= 1.6; this.boost -= dt * 0.4; }
     } else if (throttle < 0) {
       if (this.speed > 0.5) {
-        // braking
-        accel = -spec.brake;
+        // braking (ABS: modulate to avoid lock)
+        accel = -spec.brake * (sim ? 1.05 : 1.0);
+        if (sim && this.speed < 8) accel *= 0.7;
       } else {
         // reverse
         accel = spec.accel * 0.5 * throttle; // throttle negative
       }
     }
-    // drag
-    accel -= this.speed * 0.5;
+    // drag + weight transfer
+    const dragMult = sim ? 1.25 : 1.0;
+    accel -= this.speed * 0.5 * dragMult;
     // handbrake
-    if (this.handbrake) accel -= this.speed * 6;
+    if (this.handbrake) accel -= this.speed * (sim ? 8 : 6);
 
     this.speed += accel * dt;
     // clamp
@@ -190,11 +201,14 @@ export class Car {
 
     // wheels
     for (const w of this.wheels) {
-      if (w.steer) w.mesh.rotation.y = this.steerAngle * 0.5;
-      w.mesh.rotation.x -= this.speed * dt * 2;
+      const node = w.node || w.mesh;
+      if (!node) continue;
+      if (w.steer) node.rotation.y = this.steerAngle * 0.5;
+      node.rotation.x -= this.speed * dt * 2;
     }
     // steering wheel mesh
-    if (this.steeringWheelMesh) this.steeringWheelMesh.rotation.z = -this.steerAngle * 1.5;
+    const swNode = this.steeringNode || this.steeringWheelMesh;
+    if (swNode) swNode.rotation.z = -this.steerAngle * 1.5;
 
     // damage visual: darken body
     if (this.bodyMesh) {
@@ -214,6 +228,28 @@ export class Car {
     else if (s < ms * 0.85) this.gear = 4;
     else this.gear = 5;
     if (this.speed === 0 && !this.velocity.length()) this.gear = 1;
+  }
+
+  _maybeLoadModel() {
+    const manifest = CAR_MODELS[this.id];
+    if (!manifest) return;
+    assetLoader.loadGLTF(manifest.url).then(gltf => {
+      while (this.group.children.length) this.group.remove(this.group.children[0]);
+      const root = gltf.scene;
+      this.group.add(root);
+      const find = (n) => (n ? root.getObjectByName(n) : null);
+      const steerFlags = { FL: true, FR: true, RL: false, RR: false };
+      this.wheels = [];
+      for (const key of ['FL', 'FR', 'RL', 'RR']) {
+        const node = find(manifest.nodes.wheels[key]);
+        if (node) this.wheels.push({ mesh: node, node, steer: steerFlags[key] });
+      }
+      this.steeringNode = find(manifest.nodes.steeringWheel);
+      this.steeringWheelMesh = this.steeringNode;
+      this.bodyMesh = find(manifest.nodes.body) || this.bodyMesh;
+    }).catch(err => {
+      console.warn('Model load failed, keeping procedural:', err);
+    });
   }
 
   _collide(pos, colliders) {

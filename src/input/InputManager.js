@@ -55,16 +55,31 @@ export class InputManager {
   _poll() {
     requestAnimationFrame(this._poll.bind(this));
     // gamepad
+    const settings = (window.game && window.game.settings) || {};
+    const dz = settings.deadZone || 0.08;
+    const invertSteer = !!settings.invertSteer;
+    const invertPedals = !!settings.invertPedals;
     const gps = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = gps && gps[0];
-    this._gp = { up:false, down:false, left:false, right:false, hb:false, boost:false, cam:false, reset:false, pause:false };
+    this._gp = { up:false, down:false, left:false, right:false, hb:false, boost:false, cam:false, reset:false, pause:false, axisX:0, axisY:0, lt:0, rt:0 };
     if (gp) {
-      const ax = gp.axes[0] || 0;
-      const ay = gp.axes[1] || 0;
-      this._gp.left = ax < -0.25;
-      this._gp.right = ax > 0.25;
-      this._gp.up = ay < -0.25 || !!(gp.buttons[7] && gp.buttons[7].pressed);
-      this._gp.down = ay > 0.25 || !!(gp.buttons[6] && gp.buttons[6].pressed);
+      let ax = gp.axes[0] || 0;
+      let ay = gp.axes[1] || 0;
+      if (Math.abs(ax) < dz) ax = 0;
+      if (Math.abs(ay) < dz) ay = 0;
+      if (invertSteer) ax = -ax;
+      this._gp.axisX = ax;
+      this._gp.axisY = ay;
+      this._gp.left = ax < -dz;
+      this._gp.right = ax > dz;
+      // pedals: triggers or axes 2/3
+      let lt = 0, rt = 0;
+      if (gp.buttons[6]) lt = gp.buttons[6].value || (gp.buttons[6].pressed?1:0);
+      if (gp.buttons[7]) rt = gp.buttons[7].value || (gp.buttons[7].pressed?1:0);
+      if (invertPedals) { const t=lt; lt=rt; rt=t; }
+      this._gp.lt = lt; this._gp.rt = rt;
+      this._gp.up = rt > 0.1 || ay < -0.25 || !!(gp.buttons[7] && gp.buttons[7].pressed);
+      this._gp.down = lt > 0.1 || ay > 0.25 || !!(gp.buttons[6] && gp.buttons[6].pressed);
       this._gp.hb = !!(gp.buttons[0] && gp.buttons[0].pressed);
       this._gp.boost = !!(gp.buttons[1] && gp.buttons[1].pressed);
       if (gp.buttons[2] && gp.buttons[2].pressed) this._gp.cam = true;
@@ -73,7 +88,9 @@ export class InputManager {
     }
   }
 
-  update() {
+  update(settings) {
+    settings = settings || (window.game && window.game.settings) || {};
+    const dz = settings.deadZone || 0.08;
     const k = this._keys;
     const up = !!(k['KeyW'] || k['ArrowUp']) || this._gp.up;
     const down = !!(k['KeyS'] || k['ArrowDown']) || this._gp.down;

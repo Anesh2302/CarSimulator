@@ -12,6 +12,9 @@
 - `src/ui/Menu.js`: main menu, garage, settings, missions, controls.
 - `src/storage/SaveManager.js`: localStorage settings/progress.
 - `src/missions/Missions.js`: mission definitions.
+- `src/assets/AssetLoader.js`, `CarManifest.js`: GLTF loading + manifest.
+- `src/modes/GameModes.js`: game mode definitions.
+- `scripts/make_glb.py`, `scripts/export_placeholder.mjs`: asset generation.
 
 Rendering: Three.js WebGLRenderer with shadows, ACES tone mapping, fog.
 Physics: custom arcade model (no external physics engine) for portability.

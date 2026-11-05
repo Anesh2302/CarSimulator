@@ -74,5 +74,11 @@ export class HUD {
       ctx.arc(cx + game.mission.target.x * scale, cy + game.mission.target.z * scale, 4, 0, Math.PI * 2);
       ctx.fill();
     }
+    if (game.modeTarget) {
+      ctx.fillStyle = '#ffff00';
+      ctx.beginPath();
+      ctx.arc(cx + game.modeTarget.x * scale, cy + game.modeTarget.z * scale, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }

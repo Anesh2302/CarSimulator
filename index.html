@@ -31,6 +31,7 @@
           <h1>3D CAR SIMULATOR</h1>
           <p class="subtitle">Drive. Explore. Master.</p>
           <button id="btn-play">Play</button>
+          <button id="btn-modes">Game Modes</button>
           <button id="btn-garage">Garage</button>
           <button id="btn-missions">Missions</button>
           <button id="btn-settings">Settings</button>
@@ -57,6 +58,7 @@
               <option value="low">Low</option>
               <option value="medium" selected>Medium</option>
               <option value="high">High</option>
+              <option value="ultra">Ultra</option>
             </select>
           </label>
           <label>Audio Volume
@@ -68,15 +70,35 @@
           <label>Steering Sensitivity
             <input type="range" id="set-steer" min="0.5" max="2" step="0.1" value="1">
           </label>
+          <label>Physics Mode
+            <select id="set-physics">
+              <option value="arcade" selected>Arcade</option>
+              <option value="simulation">Simulation</option>
+            </select>
+          </label>
           <label>Camera FOV
             <input type="range" id="set-fov" min="60" max="100" step="1" value="75">
           </label>
           <label><input type="checkbox" id="set-touch" checked> Touch Controls</label>
           <label><input type="checkbox" id="set-shadows" checked> Shadows</label>
+          <label>Dead Zone
+            <input type="range" id="set-deadzone" min="0" max="0.3" step="0.01" value="0.08">
+          </label>
+          <label><input type="checkbox" id="set-invert-steer"> Invert Steering</label>
+          <label><input type="checkbox" id="set-invert-pedals"> Invert Pedals</label>
+          <button id="btn-calibrate">Calibrate Controller</button>
           <div class="row">
             <button id="btn-settings-back">Back</button>
             <button id="btn-settings-save">Save</button>
           </div>
+        </div>
+      </div>
+      <!-- Game Modes -->
+      <div id="modes" class="overlay hidden">
+        <div class="panel">
+          <h2>Game Modes</h2>
+          <div id="modelist"></div>
+          <button id="btn-modes-back">Back</button>
         </div>
       </div>
       <!-- Missions -->
@@ -85,6 +107,17 @@
           <h2>Missions</h2>
           <div id="missionlist"></div>
           <button id="btn-missions-back">Back</button>
+        </div>
+      </div>
+      <!-- Calibration -->
+      <div id="calibrate" class="overlay hidden">
+        <div class="panel">
+          <h2>Controller Calibration</h2>
+          <div>Steering: <span id="cal-steer">0.00</span></div>
+          <div>Throttle: <span id="cal-thr">0.00</span></div>
+          <div>Brake: <span id="cal-brk">0.00</span></div>
+          <p>Move wheel/pedals to verify. Close when done.</p>
+          <button id="btn-calibrate-close">Close</button>
         </div>
       </div>
       <!-- Controls help -->
@@ -104,6 +137,15 @@
             <li>Shift: Boost (limited)</li>
           </ul>
           <button id="btn-controls-back">Back</button>
+        </div>
+      </div>
+      <!-- Result -->
+      <div id="result" class="overlay hidden">
+        <div class="menu-box">
+          <h2 id="resulttitle">RESULT</h2>
+          <p id="resulttext"></p>
+          <button id="btn-result-retry">Retry</button>
+          <button id="btn-result-menu">Main Menu</button>
         </div>
       </div>
       <!-- Pause -->

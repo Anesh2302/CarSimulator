@@ -59,6 +59,13 @@ Touch: on-screen buttons appear on touch devices.
 
 See `docs/ARCHITECTURE.md`.
 
+## New in Professional Upgrade
+- Blender/GLTF asset pipeline + placeholder GLB.
+- Arcade/Simulation physics modes.
+- Game modes: Free Roam, Time Trial, Checkpoint, Parking, Vehicle Test.
+- Controller calibration + dead-zone/invert settings.
+- Additional docs.
+
 ## Testing
 
 ```bash

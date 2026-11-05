@@ -32,6 +32,12 @@ export class Game {
     this.selectedCarId = this.progress.selectedCar || 'sport';
     this.mission = null;
     this.missionProgress = 0;
+    this.gameMode = 'freeroam';
+    this.modeTarget = null;
+    this.modeTimer = 0;
+    this.modeActive = false;
+    this.modeFinished = false;
+    this.parkTimer = 0;
   }
 
   async init() {
@@ -99,7 +105,8 @@ export class Game {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  startPlay() {
+  startPlay(modeId) {
+    if (modeId) this.gameMode = modeId;
     this.menu.hide();
     document.getElementById('garage').classList.add('hidden');
     document.getElementById('settings').classList.add('hidden');
@@ -120,6 +127,21 @@ export class Game {
     }
     this.audio.resume();
     this.car.reset();
+    // mode setup
+    this.modeFinished = false;
+    this.modeTimer = 0;
+    this.parkTimer = 0;
+    document.getElementById('result').classList.add('hidden');
+    if (this.gameMode === 'timetrial' || this.gameMode === 'checkpoint') {
+      this.modeTarget = new THREE.Vector3(120,1,80);
+      this.modeActive = true;
+    } else if (this.gameMode === 'parking') {
+      this.modeTarget = new THREE.Vector3(40,1,40);
+      this.modeActive = true;
+    } else {
+      this.modeTarget = null;
+      this.modeActive = false;
+    }
   }
 
   pause() {
@@ -153,7 +175,7 @@ export class Game {
   }
 
   _update(dt) {
-    this.input.update();
+    this.input.update(this.settings);
     const input = this.input.state;
     // pause
     if (input.pausePressed) { input.pausePressed = false; this.pause(); return; }
@@ -169,12 +191,41 @@ export class Game {
 
     this.car.update(dt, input, this.world.colliders);
     this.world.update(dt, this);
+    // game mode logic
+    if (this.modeActive && !this.modeFinished) {
+      if (this.gameMode === 'timetrial' || this.gameMode === 'checkpoint' || this.gameMode === 'parking') {
+        this.modeTimer += dt;
+      }
+      if (this.modeTarget) {
+        const dist = this.car.position.distanceTo(this.modeTarget);
+        if (this.gameMode === 'parking') {
+          if (dist < 3 && Math.abs(this.car.speed) < 1) {
+            this.parkTimer += dt;
+            if (this.parkTimer > 2) this._finishMode();
+          } else {
+            this.parkTimer = 0;
+          }
+        } else {
+          if (dist < 5) this._finishMode();
+        }
+      }
+    }
     this.cameraCtrl.update(dt, this.car);
     this.hud.update(dt, this.car, this);
     this.audio.update(dt, this.car, this.settings);
 
     // mission check
     if (this.mission) this._updateMission(dt);
+    // mode HUD
+    const missionBox = document.getElementById('mission');
+    if (this.modeActive && !this.modeFinished) {
+      missionBox.classList.remove('hidden');
+      document.getElementById('missiontitle').textContent = this.gameMode.toUpperCase();
+      document.getElementById('missiondesc').textContent = this.modeTarget ? 'Reach the target' : 'Free drive';
+      document.getElementById('missionprog').textContent = 'Time: ' + this.modeTimer.toFixed(2) + 's';
+    } else if (!this.mission) {
+      missionBox.classList.add('hidden');
+    }
   }
 
   _updateMission(dt) {
@@ -195,6 +246,22 @@ export class Game {
     document.getElementById('missiontitle').textContent = mission.title;
     document.getElementById('missiondesc').textContent = mission.desc;
   }
+  _finishMode() {
+    this.modeFinished = true;
+    this.modeActive = false;
+    const time = this.modeTimer;
+    const best = this.progress.bestTimes || {};
+    if (!best[this.gameMode] || time < best[this.gameMode]) {
+      best[this.gameMode] = time;
+      this.progress.bestTimes = best;
+      SaveManager.saveProgress(this.progress);
+    }
+    document.getElementById('resulttitle').textContent = 'FINISH';
+    document.getElementById('resulttext').textContent = this.gameMode + ' completed in ' + time.toFixed(2) + 's. Best: ' + (best[this.gameMode]||time).toFixed(2) + 's';
+    document.getElementById('result').classList.remove('hidden');
+    document.getElementById('btn-result-retry').onclick = () => { document.getElementById('result').classList.add('hidden'); this.startPlay(this.gameMode); };
+    document.getElementById('btn-result-menu').onclick = () => { document.getElementById('result').classList.add('hidden'); this.backToMenu(); };
+  }
   _completeMission() {
     const m = this.mission;
     this.progress.money = (this.progress.money || 0) + (m.reward || 100);
@@ -208,5 +275,17 @@ export class Game {
 
   _render() {
     this.renderer.render(this.scene, this.camera);
+    this._updateCalibration();
+  }
+  _updateCalibration() {
+    const el = document.getElementById('calibrate');
+    if (!el || el.classList.contains('hidden')) return;
+    const gp = (navigator.getGamepads && navigator.getGamepads()) ? navigator.getGamepads()[0] : null;
+    const steer = gp ? (gp.axes[0] || 0) : 0;
+    const thr = gp && gp.buttons[7] ? (gp.buttons[7].value || 0) : 0;
+    const brk = gp && gp.buttons[6] ? (gp.buttons[6].value || 0) : 0;
+    document.getElementById('cal-steer').textContent = steer.toFixed(2);
+    document.getElementById('cal-thr').textContent = thr.toFixed(2);
+    document.getElementById('cal-brk').textContent = brk.toFixed(2);
   }
 }
