@@ -207,6 +207,16 @@ export class Car {
     const speedRatio = Math.abs(this.speed) / spec.maxSpeed;
     this.rpm = 800 + speedRatio * 6000 + (throttle > 0 ? 500 : 0);
 
+    // suspension offsets
+    if (!this.suspOffsets) this.suspOffsets = [0,0,0,0];
+    const longTransfer = Math.min(0.05, Math.abs(this.speed)/spec.maxSpeed * 0.04);
+    const latTransfer = Math.min(0.05, Math.abs(this.steerAngle) * 0.03);
+    // FL, FR, RL, RR
+    this.suspOffsets[0] = -longTransfer*0.5 + latTransfer*0.5;
+    this.suspOffsets[1] = -longTransfer*0.5 - latTransfer*0.5;
+    this.suspOffsets[2] = longTransfer*0.5 + latTransfer*0.5;
+    this.suspOffsets[3] = longTransfer*0.5 - latTransfer*0.5;
+
     // update group transform
     this.group.position.copy(this.position);
     this.group.rotation.y = this.heading;
@@ -222,12 +232,14 @@ export class Car {
   }
 
   updateVisuals(dt) {
-    for (const w of this.wheels) {
+    if (!this.suspOffsets) this.suspOffsets = [0,0,0,0];
+    this.wheels.forEach((w, i) => {
       const node = w.node || w.mesh;
-      if (!node) continue;
+      if (!node) return;
       if (w.steer) node.rotation.y = this.steerAngle * 0.5;
       node.rotation.x -= this.speed * dt * 2;
-    }
+      node.position.y = 0.35 + (this.suspOffsets[i] || 0);
+    });
     const swNode = this.steeringNode || this.steeringWheelMesh;
     if (swNode) swNode.rotation.z = -this.steerAngle * 1.5;
   }
