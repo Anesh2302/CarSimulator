@@ -1,0 +1,50 @@
+:root { --accent:#00e5ff; --bg:#0b0f1a; --panel:rgba(12,18,32,0.85); }
+* { box-sizing:border-box; }
+html,body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:var(--bg); font-family:Segoe UI,Roboto,Arial,sans-serif; color:#e8f0ff; }
+#app { position:relative; width:100%; height:100%; }
+canvas#gl { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:radial-gradient(ellipse at center, rgba(10,20,40,0.7), rgba(0,0,0,0.92)); z-index:10; }
+.overlay.hidden { display:none; }
+.loading-box,.menu-box,.panel { background:var(--panel); border:1px solid rgba(0,229,255,0.3); border-radius:16px; padding:28px 36px; min-width:320px; text-align:center; backdrop-filter:blur(8px); box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+.loading-box h1,.menu-box h1 { margin:0 0 12px; letter-spacing:4px; color:var(--accent); text-shadow:0 0 12px var(--accent); }
+.bar { width:260px; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; margin:12px auto; }
+#loadbar { width:0%; height:100%; background:linear-gradient(90deg,var(--accent),#fff); transition:width 0.2s; }
+.menu-box button,.panel button { display:block; width:100%; margin:8px 0; padding:12px; border:none; border-radius:8px; background:linear-gradient(180deg,#1a2a4a,#0d1628); color:#e8f0ff; font-size:15px; cursor:pointer; border:1px solid rgba(0,229,255,0.25); transition:transform .1s,box-shadow .2s; }
+.menu-box button:hover,.panel button:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,229,255,0.25); }
+.subtitle { color:#8fb; opacity:.8; margin-bottom:16px; }
+.panel { text-align:left; min-width:360px; max-height:80vh; overflow:auto; }
+.panel h2 { color:var(--accent); margin-top:0; }
+.panel label { display:block; margin:10px 0; font-size:14px; }
+.panel select,.panel input[type=range] { width:100%; margin-top:4px; }
+.row { display:flex; gap:8px; margin-top:12px; }
+.row button { flex:1; }
+.carlist { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; max-height:50vh; overflow:auto; }
+.carcard { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px; cursor:pointer; }
+.carcard.sel { border-color:var(--accent); box-shadow:0 0 12px rgba(0,229,255,0.4); }
+.carcard h3 { margin:0 0 4px; font-size:14px; }
+.carcard p { margin:0; font-size:11px; opacity:.7; }
+.ctrl-list { text-align:left; line-height:1.9; font-size:14px; }
+#hud { position:absolute; inset:0; pointer-events:none; z-index:5; }
+#hud.hidden { display:none; }
+#speedometer { position:absolute; bottom:20px; left:20px; width:150px; height:150px; }
+#speed { font-size:42px; font-weight:700; color:#fff; text-align:center; line-height:1; margin-top:30px; text-shadow:0 0 8px var(--accent); }
+.unit { text-align:center; font-size:12px; opacity:.7; }
+#rpmcanvas { position:absolute; top:0; left:0; }
+#dash { position:absolute; bottom:20px; left:180px; display:flex; gap:16px; font-size:13px; background:var(--panel); padding:8px 12px; border-radius:8px; border:1px solid rgba(0,229,255,0.2); }
+#minimap-wrap { position:absolute; bottom:20px; right:20px; }
+#minimap { border-radius:8px; border:1px solid rgba(0,229,255,0.3); background:rgba(0,0,0,0.5); }
+.mission-box { position:absolute; top:20px; left:50%; transform:translateX(-50%); background:var(--panel); padding:10px 16px; border-radius:8px; border:1px solid rgba(0,229,255,0.3); min-width:260px; text-align:center; }
+.mission-box.hidden { display:none; }
+#missiontitle { color:var(--accent); font-weight:700; }
+.touch { position:absolute; inset:0; pointer-events:none; }
+.touch.hidden { display:none; }
+.touch .tbtn { pointer-events:auto; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; border-radius:50%; width:64px; height:64px; font-size:14px; margin:6px; touch-action:none; user-select:none; }
+.touch .tbtn.gas { background:rgba(0,229,255,0.25); }
+.touch .tbtn.brake { background:rgba(255,80,80,0.25); }
+.touch .tbtn.small { width:48px; height:48px; border-radius:8px; font-size:11px; }
+.tcluster { position:absolute; display:flex; flex-wrap:wrap; }
+.tcluster.left { left:10px; bottom:180px; }
+.tcluster.right { right:10px; bottom:180px; flex-direction:column; align-items:flex-end; }
+.tcluster.top { top:10px; right:10px; }
+@media (max-width:768px){ #touch { display:block; } }
+@media (pointer:coarse){ #touch { display:block !important; } }

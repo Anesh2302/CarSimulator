@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>3D Car Simulator</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="gl"></canvas>
+      <!-- Loading -->
+      <div id="loading" class="overlay">
+        <div class="loading-box">
+          <h1>3D CAR SIMULATOR</h1>
+          <div class="bar"><div id="loadbar"></div></div>
+          <p id="loadmsg">Initializing...</p>
+        </div>
+      </div>
+      <!-- Error -->
+      <div id="error" class="overlay hidden">
+        <div class="loading-box">
+          <h1>ERROR</h1>
+          <p id="errmsg"></p>
+          <button id="errretry">Retry</button>
+        </div>
+      </div>
+      <!-- Main Menu -->
+      <div id="menu" class="overlay hidden">
+        <div class="menu-box">
+          <h1>3D CAR SIMULATOR</h1>
+          <p class="subtitle">Drive. Explore. Master.</p>
+          <button id="btn-play">Play</button>
+          <button id="btn-garage">Garage</button>
+          <button id="btn-missions">Missions</button>
+          <button id="btn-settings">Settings</button>
+          <button id="btn-controls">Controls</button>
+        </div>
+      </div>
+      <!-- Garage -->
+      <div id="garage" class="overlay hidden">
+        <div class="panel">
+          <h2>Garage</h2>
+          <div id="carlist" class="carlist"></div>
+          <div class="row">
+            <button id="btn-garage-back">Back</button>
+            <button id="btn-garage-select">Select</button>
+          </div>
+        </div>
+      </div>
+      <!-- Settings -->
+      <div id="settings" class="overlay hidden">
+        <div class="panel">
+          <h2>Settings</h2>
+          <label>Graphics Quality
+            <select id="set-graphics">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label>Audio Volume
+            <input type="range" id="set-volume" min="0" max="1" step="0.05" value="0.7">
+          </label>
+          <label>Music Volume
+            <input type="range" id="set-music" min="0" max="1" step="0.05" value="0.4">
+          </label>
+          <label>Steering Sensitivity
+            <input type="range" id="set-steer" min="0.5" max="2" step="0.1" value="1">
+          </label>
+          <label>Camera FOV
+            <input type="range" id="set-fov" min="60" max="100" step="1" value="75">
+          </label>
+          <label><input type="checkbox" id="set-touch" checked> Touch Controls</label>
+          <label><input type="checkbox" id="set-shadows" checked> Shadows</label>
+          <div class="row">
+            <button id="btn-settings-back">Back</button>
+            <button id="btn-settings-save">Save</button>
+          </div>
+        </div>
+      </div>
+      <!-- Missions -->
+      <div id="missions" class="overlay hidden">
+        <div class="panel">
+          <h2>Missions</h2>
+          <div id="missionlist"></div>
+          <button id="btn-missions-back">Back</button>
+        </div>
+      </div>
+      <!-- Controls help -->
+      <div id="controls" class="overlay hidden">
+        <div class="panel">
+          <h2>Controls</h2>
+          <ul class="ctrl-list">
+            <li>W / Up: Accelerate</li>
+            <li>S / Down: Brake / Reverse</li>
+            <li>A / Left: Steer Left</li>
+            <li>D / Right: Steer Right</li>
+            <li>Space: Handbrake</li>
+            <li>C: Cycle Camera</li>
+            <li>R: Reset Car</li>
+            <li>P: Pause</li>
+            <li>Esc: Menu</li>
+            <li>Shift: Boost (limited)</li>
+          </ul>
+          <button id="btn-controls-back">Back</button>
+        </div>
+      </div>
+      <!-- Pause -->
+      <div id="pause" class="overlay hidden">
+        <div class="menu-box">
+          <h2>PAUSED</h2>
+          <button id="btn-resume">Resume</button>
+          <button id="btn-pause-settings">Settings</button>
+          <button id="btn-pause-menu">Main Menu</button>
+        </div>
+      </div>
+      <!-- HUD -->
+      <div id="hud" class="hidden">
+        <div id="speedometer">
+          <div id="speed">0</div>
+          <div class="unit">km/h</div>
+          <canvas id="rpmcanvas" width="120" height="120"></canvas>
+        </div>
+        <div id="dash">
+          <span>Gear: <b id="gear">N</b></span>
+          <span>Fuel: <b id="fuel">100%</b></span>
+          <span>Damage: <b id="damage">0%</b></span>
+          <span>Cam: <b id="camname">Third</b></span>
+        </div>
+        <div id="minimap-wrap"><canvas id="minimap" width="160" height="160"></canvas></div>
+        <div id="mission" class="mission-box hidden">
+          <div id="missiontitle"></div>
+          <div id="missiondesc"></div>
+          <div id="missionprog"></div>
+        </div>
+        <div id="touch" class="touch hidden">
+          <div class="tcluster left">
+            <button data-key="ArrowLeft" class="tbtn">◀</button>
+            <button data-key="ArrowRight" class="tbtn">▶</button>
+          </div>
+          <div class="tcluster right">
+            <button data-key="ArrowUp" class="tbtn gas">GAS</button>
+            <button data-key="ArrowDown" class="tbtn brake">BRK</button>
+            <button data-key=" " class="tbtn hb">HB</button>
+          </div>
+          <div class="tcluster top">
+            <button id="tcam" class="tbtn small">CAM</button>
+            <button id="treset" class="tbtn small">RST</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
