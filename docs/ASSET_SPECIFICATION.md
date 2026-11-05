@@ -1,17 +1,12 @@
 # Asset Specification
 
-## Vehicle manifest
+## Blender manifest
+`blender/manifests/vehicle_manifest.json` describes expected node names.
+
+## Game manifest
 `src/assets/CarManifest.js` maps car id -> { url, nodes }.
 
-## Node requirements
-- body: main body mesh
-- wheels: FL, FR, RL, RR
-- steeringWheel: steering wheel mesh
-- glass: transparent glass mesh
-- headlights/brakelights/indicators: optional emissive meshes
-
-## Environment
-- GLB or procedural. Use instancing for repeated props.
-
-## Textures
-- Base color, normal, roughness, metallic. Power-of-two. Max 2048 for hero assets, 512 for props.
+## Verified
+- Real Blender 5.2.3 export loaded in game as car id `blender`.
+- Wheel nodes (4) connected; steering node connected.
+- Physics remains independent.

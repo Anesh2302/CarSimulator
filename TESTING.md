@@ -22,3 +22,12 @@
 
 ## Browser test (dev)
 Run `npm run dev`, open http://localhost:5173.
+
+## Blender integration tests
+1. `npm run blender:check` -> Blender 5.2.3 LTS.
+2. `npm run blender:create-test` -> creates blend.
+3. `npm run blender:validate` -> VALIDATION_OK.
+4. `npm run blender:export` -> EXPORT_OK + copy.
+5. Load game, select Blender Test Vehicle, verify model appears and wheels steer.
+6. Run `npm run blender:export` again while game running -> model reloads.
+7. Invalid small file -> watcher skips, previous model preserved.

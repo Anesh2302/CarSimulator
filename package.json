@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "blender:check": "node scripts/blender-check.mjs",
+    "blender:create-test": "node scripts/blender-create-test.mjs",
+    "blender:validate": "node scripts/blender-validate.mjs",
+    "blender:export": "node scripts/blender-export.mjs",
+    "blender:watch": "node scripts/blender-watch.mjs"
   },
   "devDependencies": {
     "vite": "^8.3.6"

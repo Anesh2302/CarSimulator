@@ -27,6 +27,15 @@ npm install
 npm run dev
 ```
 
+## Blender (optional)
+```bash
+npm run blender:check
+npm run blender:create-test
+npm run blender:validate
+npm run blender:export
+npm run blender:watch
+```
+
 Open http://localhost:5173
 
 ### Production build

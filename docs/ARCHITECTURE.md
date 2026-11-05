@@ -15,6 +15,8 @@
 - `src/assets/AssetLoader.js`, `CarManifest.js`: GLTF loading + manifest.
 - `src/modes/GameModes.js`: game mode definitions.
 - `scripts/make_glb.py`, `scripts/export_placeholder.mjs`: asset generation.
+- `blender/scripts/*.py`: Blender automation.
+- `scripts/blender-*.mjs`: detection/create/validate/export/watch.
 
 Rendering: Three.js WebGLRenderer with shadows, ACES tone mapping, fog.
 Physics: custom arcade model (no external physics engine) for portability.

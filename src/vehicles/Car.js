@@ -3,6 +3,7 @@ import { assetLoader } from '../assets/AssetLoader.js';
 import { CAR_MODELS } from '../assets/CarManifest.js';
 
 export const CAR_SPECS = {
+  blender: { name:'Blender Test Vehicle', color:0x3a7bd5, maxSpeed:40, accel:16, brake:26, steer:2.0, mass:1300, fuel:100, handling:0.85 },
   sport: { name:'Sport GT', color:0xe53935, maxSpeed:42, accel:18, brake:28, steer:2.2, mass:1200, fuel:100, handling:0.9 },
   suv: { name:'SUV Trail', color:0x3a7bd5, maxSpeed:32, accel:12, brake:22, steer:1.6, mass:1800, fuel:120, handling:0.7 },
   truck: { name:'Cargo Truck', color:0xf9a825, maxSpeed:24, accel:8, brake:18, steer:1.2, mass:3200, fuel:150, handling:0.5 },
@@ -234,6 +235,9 @@ export class Car {
     const manifest = CAR_MODELS[this.id];
     if (!manifest) return;
     assetLoader.loadGLTF(manifest.url).then(gltf => {
+      // validate
+      if (!gltf || !gltf.scene) throw new Error('Invalid GLTF');
+      // remove old only after successful load
       while (this.group.children.length) this.group.remove(this.group.children[0]);
       const root = gltf.scene;
       this.group.add(root);

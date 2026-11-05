@@ -1,0 +1,24 @@
+{
+  "name": "test_vehicle",
+  "version": "1.0",
+  "blender_version": "5.2.3",
+  "nodes": {
+    "body": "Body",
+    "wheels": {
+      "FL": "Wheel_FL",
+      "FR": "Wheel_FR",
+      "RL": "Wheel_RL",
+      "RR": "Wheel_RR"
+    },
+    "steeringWheel": "SteeringWheel",
+    "glass": "Glass",
+    "lights": {
+      "headlight_L": "Headlight_L",
+      "headlight_R": "Headlight_R",
+      "taillight_L": "Taillight_L",
+      "taillight_R": "Taillight_R"
+    }
+  },
+  "scale": 1.0,
+  "orientation": "Y-up"
+}

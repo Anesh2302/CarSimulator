@@ -5,6 +5,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { CameraController } from '../camera/CameraController.js';
 import { World } from '../world/World.js';
 import { Car } from '../vehicles/Car.js';
+import { assetLoader } from '../assets/AssetLoader.js';
 import { HUD } from '../ui/HUD.js';
 import { Menu } from '../ui/Menu.js';
 
@@ -85,6 +86,10 @@ export class Game {
 
     this._setLoading(1.0, 'Ready');
     await this._yield();
+    if (import.meta.env.DEV) {
+      this._lastModelVersion = 0;
+      setInterval(() => this._checkModelVersion(), 3000);
+    }
     this._hideLoading();
     this.state = 'menu';
     this.menu.show();
@@ -276,6 +281,21 @@ export class Game {
   _render() {
     this.renderer.render(this.scene, this.camera);
     this._updateCalibration();
+  }
+  async _checkModelVersion() {
+    try {
+      const res = await fetch('/models/blender_vehicle.version.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.version && data.version !== this._lastModelVersion) {
+        this._lastModelVersion = data.version;
+        if (this.car && this.car.id === 'blender') {
+          assetLoader.clearCache();
+          this.car._maybeLoadModel();
+          this.hud.flash('Blender model reloaded');
+        }
+      }
+    } catch (e) {}
   }
   _updateCalibration() {
     const el = document.getElementById('calibrate');

@@ -1,28 +1,25 @@
 # Blender Workflow
 
-## Export settings
-- Format: glTF 2.0 (.glb)
-- Apply modifiers: yes
-- Include: selected objects or whole scene
-- Transform: +Y up
-- Geometry: UVs, normals, tangents
-- Materials: PBR (Principled BSDF)
-- Textures: PNG/JPEG, power-of-two
-- Animation: include if needed
-- Compression: Draco optional (requires DRACOLoader)
+## Detection
+- Run `npm run blender:check` (uses `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe` by default or `BLENDER_PATH`).
+- Verified: Blender 5.2.3 LTS.
 
-## Naming
-Use configurable names in `src/assets/CarManifest.js`. Example names: Body, Wheel_FL, Wheel_FR, Wheel_RL, Wheel_RR, SteeringWheel, Glass.
+## Create test scene
+- `npm run blender:create-test` runs `blender/scripts/create_test_vehicle.py` in background mode.
+- Saves `blender/vehicles/test_vehicle.blend`.
 
-## Pipeline
-1. Model in Blender.
-2. Assign PBR materials and textures.
-3. Name objects.
-4. Export as .glb to `public/models/`.
-5. Add entry to `src/assets/CarManifest.js`.
-6. Test load in game.
+## Validate
+- `npm run blender:validate` runs `blender/scripts/validate_scene.py`.
+- Verified: all required objects present, no scale warnings.
 
-## Notes
-- Keep mesh pivots at wheel centers.
-- Separate materials for glass (transparent).
-- Use LODs by suffix `_LOD0`, `_LOD1` if desired.
+## Export
+- `npm run blender:export` runs `blender/scripts/export_vehicle.py`.
+- Exports `blender/exports/test_vehicle.glb` and copies to `public/models/blender_vehicle.glb`.
+- Verified: export succeeded, size 53232 bytes.
+
+## Live sync
+- `npm run blender:watch` watches export file and updates version JSON.
+- Game polls version in dev mode and reloads model.
+
+## Supported object names
+Body, Wheel_FL/FR/RL/RR, SteeringWheel, Glass, Headlight_L/R, Taillight_L/R.
