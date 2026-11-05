@@ -194,7 +194,15 @@ export class Game {
     // weather
     if (input.weatherPressed) { input.weatherPressed = false; const ws = ['clear','rain','fog']; const i = ws.indexOf(this.world.weather); this.world.setWeather(ws[(i+1)%ws.length]); if (this.world.weather === 'fog') { this.scene.fog.near = 20; this.scene.fog.far = 120; } else if (this.world.weather === 'clear') { this.scene.fog.near = 60; this.scene.fog.far = 260; } }
 
-    this.car.update(dt, input, this.world.colliders);
+    // fixed timestep physics
+    if (!this._physAcc) this._physAcc = 0;
+    this._physAcc += dt;
+    const fixed = 1/60;
+    while (this._physAcc >= fixed) {
+      this.car.update(fixed, input, this.world.colliders);
+      this._physAcc -= fixed;
+    }
+    this.car.updateVisuals(dt);
     this.world.update(dt, this);
     // game mode logic
     if (this.modeActive && !this.modeFinished) {

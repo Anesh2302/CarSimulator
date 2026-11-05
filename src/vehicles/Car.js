@@ -117,12 +117,10 @@ export class Car {
 
     // steering
     const steerLimit = sim ? spec.steer * 0.85 : spec.steer;
-    const steerTarget = steerInput * steerLimit * steerSens;
+    const speedSteerFactor = Math.max(0.35, 1 - Math.abs(this.speed) / spec.maxSpeed * 0.55);
+    const steerTarget = steerInput * steerLimit * steerSens * speedSteerFactor;
     const steerRate = sim ? 6 : 8;
     this.steerAngle += (steerTarget - this.steerAngle) * Math.min(1, dt * steerRate);
-    // reduce steering at high speed
-    const steerFactor = Math.max(0.3, 1 - Math.abs(this.speed) / spec.maxSpeed * 0.6);
-    this.steerAngle *= steerFactor / Math.max(0.3, steerFactor); // no-op-ish; keep
 
     // acceleration model
     const maxSpeed = spec.maxSpeed + (this.boost > 0.1 ? 6 : 0);
@@ -165,6 +163,17 @@ export class Car {
     const steerSign = this.speed >= 0 ? 1 : -1;
     this.heading += steerSign * steerEffect * dt * 0.8;
 
+    // tire grip / weight transfer / slip
+    const turnSlip = Math.abs(this.steerAngle) * Math.abs(this.speed) / Math.max(1, spec.maxSpeed);
+    const weightTransfer = Math.min(0.3, Math.abs(this.speed) / spec.maxSpeed * 0.25);
+    const gripFactor = Math.max(0.4, 1 - turnSlip * 0.5 - (sim ? weightTransfer * 0.3 : weightTransfer * 0.15));
+    // traction control
+    if (sim && throttle > 0 && this.speed > spec.maxSpeed * 0.7) {
+      accel *= 0.7;
+    }
+    // apply grip as small speed bleed in hard turns
+    this.speed *= (1 - (1 - gripFactor) * 0.012);
+
     // position update
     const dir = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
     this.velocity.copy(dir).multiplyScalar(this.speed);
@@ -201,22 +210,25 @@ export class Car {
     this.group.position.copy(this.position);
     this.group.rotation.y = this.heading;
 
-    // wheels
+    // suspension visual offset (simple)
+    this.group.position.y = 1 + Math.sin(this.position.x*0.1 + this.position.z*0.1) * 0.0; // placeholder no terrain
+
+    // damage visual: darken body
+    if (this.bodyMesh) {
+      const d = this.damage / 100;
+      this.bodyMesh.material.color.setRGB(((spec.color >> 16) & 255)/255, ((spec.color >> 8) & 255)/255, (spec.color & 255)/255).multiplyScalar(1 - d * 0.4);
+    }
+  }
+
+  updateVisuals(dt) {
     for (const w of this.wheels) {
       const node = w.node || w.mesh;
       if (!node) continue;
       if (w.steer) node.rotation.y = this.steerAngle * 0.5;
       node.rotation.x -= this.speed * dt * 2;
     }
-    // steering wheel mesh
     const swNode = this.steeringNode || this.steeringWheelMesh;
     if (swNode) swNode.rotation.z = -this.steerAngle * 1.5;
-
-    // damage visual: darken body
-    if (this.bodyMesh) {
-      const d = this.damage / 100;
-      this.bodyMesh.material.color.setRGB(spec.color >> 16 & 255, (spec.color >> 8) & 255, spec.color & 255).multiplyScalar(1 - d * 0.4);
-    }
   }
 
   _updateGear() {
@@ -258,19 +270,20 @@ export class Car {
   }
 
   _collide(pos, colliders) {
-    // car AABB approx
-    const halfW = 1.1, halfL = 2.2;
-    // compute car bbox in world
-    // simple: check center point against colliders expanded
+    // check multiple points around car
+    const pts = [
+      pos.clone(),
+      pos.clone().add(new THREE.Vector3(Math.sin(this.heading)*2,0,Math.cos(this.heading)*2)),
+      pos.clone().add(new THREE.Vector3(-Math.sin(this.heading)*2,0,-Math.cos(this.heading)*2)),
+      pos.clone().add(new THREE.Vector3(Math.cos(this.heading)*1,0,-Math.sin(this.heading)*1)),
+      pos.clone().add(new THREE.Vector3(-Math.cos(this.heading)*1,0,Math.sin(this.heading)*1)),
+    ];
     for (const box of colliders) {
-      // transform pos into box local? boxes are axis-aligned world
-      const expanded = box.clone().expandByScalar(1.2);
-      if (expanded.containsPoint(pos)) {
-        // also ensure not just ground; ok
-        return true;
+      const expanded = box.clone().expandByScalar(0.6);
+      for (const p of pts) {
+        if (expanded.containsPoint(p)) return true;
       }
     }
-    // also check distance to colliders via bounding
     return false;
   }
 }
