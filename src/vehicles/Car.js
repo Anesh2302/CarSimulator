@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { assetLoader } from '../assets/AssetLoader.js';
 import { CAR_MODELS } from '../assets/CarManifest.js';
+import { stepVehicle } from '../physics/VehiclePhysics.js';
 
 export const CAR_SPECS = {
   blender: { name:'Blender Test Vehicle', color:0x3a7bd5, maxSpeed:40, accel:16, brake:26, steer:2.0, mass:1300, fuel:100, handling:0.85 },
@@ -27,6 +28,8 @@ export class Car {
     this.velocity = new THREE.Vector3();
     this.heading = 0; // yaw radians
     this.speed = 0; // signed scalar along heading
+    this.yawRate = 0;
+    this.wheelOmegas = [0,0,0,0];
     this.steerAngle = 0;
     this.rpm = 0;
     this.gear = 1; // 0 reverse, 1..5
@@ -84,6 +87,8 @@ export class Car {
     this.position.copy(pos);
     this.velocity.set(0, 0, 0);
     this.speed = 0;
+    this.yawRate = 0;
+    this.wheelOmegas = [0,0,0,0];
     this.heading = 0;
     this.gear = 1;
     this.fuel = this.spec.fuel;
@@ -107,73 +112,62 @@ export class Car {
     if (this.fuel < 0) this.fuel = 0;
 
     // input
-    let throttle = 0;
-    if (input.up) throttle = 1;
-    if (input.down) throttle = -1; // brake / reverse
     let steerInput = 0;
     if (input.left) steerInput = 1;
     if (input.right) steerInput = -1;
     this.handbrake = !!input.handbrake;
 
-    // steering
-    const steerLimit = sim ? spec.steer * 0.85 : spec.steer;
-    const speedSteerFactor = Math.max(0.35, 1 - Math.abs(this.speed) / spec.maxSpeed * 0.55);
-    const steerTarget = steerInput * steerLimit * steerSens * speedSteerFactor;
-    const steerRate = sim ? 6 : 8;
-    this.steerAngle += (steerTarget - this.steerAngle) * Math.min(1, dt * steerRate);
+    // steering input
+    // (steering angle computed in physics step)
 
-    // acceleration model
-    const maxSpeed = spec.maxSpeed + (this.boost > 0.1 ? 6 : 0);
-    // gear
+    // input mapping for physics
+    let throttle = 0;
+    let brake = 0;
+    if (input.up) throttle = 1;
+    if (input.down) {
+      if (this.speed > 1) brake = 1;
+      else throttle = -0.6; // reverse
+    }
+    if (this.fuel <= 0) throttle = 0;
+    if (input.boost && this.boost > 0 && throttle > 0) { throttle *= 1.4; this.boost -= dt * 0.4; }
+
     this._updateGear();
 
-    if (this.fuel <= 0) throttle = 0;
+    const maxSpeed = spec.maxSpeed + (this.boost > 0.1 ? 6 : 0);
 
-    // longitudinal
-    let accel = 0;
-    if (throttle > 0) {
-      accel = spec.accel * throttle * (sim ? 0.9 : 1.0);
-      // traction control: limit accel at high speed
-      if (sim && this.speed > spec.maxSpeed * 0.75) accel *= 0.6;
-      if (input.boost && this.boost > 0) { accel *= 1.6; this.boost -= dt * 0.4; }
-    } else if (throttle < 0) {
-      if (this.speed > 0.5) {
-        // braking (ABS: modulate to avoid lock)
-        accel = -spec.brake * (sim ? 1.05 : 1.0);
-        if (sim && this.speed < 8) accel *= 0.7;
-      } else {
-        // reverse
-        accel = spec.accel * 0.5 * throttle; // throttle negative
-      }
-    }
-    // drag + weight transfer
-    const dragMult = sim ? 1.25 : 1.0;
-    accel -= this.speed * 0.5 * dragMult;
-    // handbrake
-    if (this.handbrake) accel -= this.speed * (sim ? 8 : 6);
+    const params = {
+      mass: spec.mass,
+      power: spec.accel * spec.mass * 0.6,
+      brakeForce: spec.brake * spec.mass * 0.5,
+      wheelRadius: 0.35,
+      wheelbase: 2.6,
+      cgHeight: 0.5,
+      trackWidth: 1.6,
+      tireGrip: spec.handling * (sim ? 0.9 : 1.1),
+      tireStiffness: 6000,
+      corneringStiffness: 4000,
+      dragCoeff: 0.35 * (sim ? 1.2 : 1.0),
+      rollingResistance: 0.6,
+      steerLimit: spec.steer * (sim ? 0.85 : 1.0),
+      maxSpeed,
+      drive: 'rwd',
+      wheelInertia: 1.2,
+    };
 
-    this.speed += accel * dt;
-    // clamp
+    const state = { speed: this.speed, heading: this.heading, yawRate: this.yawRate || 0, wheelOmegas: this.wheelOmegas || [0,0,0,0] };
+    const next = stepVehicle(state, { throttle, brake, steer: steerInput, handbrake: this.handbrake }, params, dt);
+
+    this.speed = next.speed;
     if (this.speed > maxSpeed) this.speed = maxSpeed;
     if (this.speed < -spec.maxSpeed * 0.35) this.speed = -spec.maxSpeed * 0.35;
+    this.heading = next.heading;
+    this.yawRate = next.yawRate;
+    this.wheelOmegas = next.wheelOmegas;
+    this.steerAngle = next.steerAngle;
+    this.slip = Math.abs(next.slipRatio);
 
-    // heading update
-    const steerEffect = this.steerAngle * (Math.abs(this.speed) / (spec.maxSpeed * 0.5) + 0.2);
-    // sign: when reversing, invert steering
-    const steerSign = this.speed >= 0 ? 1 : -1;
-    this.heading += steerSign * steerEffect * dt * 0.8;
-
-    // tire grip / weight transfer / slip
-    const turnSlip = Math.abs(this.steerAngle) * Math.abs(this.speed) / Math.max(1, spec.maxSpeed);
-    this.slip = turnSlip;
-    const weightTransfer = Math.min(0.3, Math.abs(this.speed) / spec.maxSpeed * 0.25);
-    const gripFactor = Math.max(0.4, 1 - turnSlip * 0.5 - (sim ? weightTransfer * 0.3 : weightTransfer * 0.15));
-    // traction control
-    if (sim && throttle > 0 && this.speed > spec.maxSpeed * 0.7) {
-      accel *= 0.7;
-    }
-    // apply grip as small speed bleed in hard turns
-    this.speed *= (1 - (1 - gripFactor) * 0.012);
+    // handbrake extra
+    if (this.handbrake) this.speed *= 0.92;
 
     // position update
     const dir = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));

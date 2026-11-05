@@ -11,10 +11,12 @@
     "blender:create-test": "node scripts/blender-create-test.mjs",
     "blender:validate": "node scripts/blender-validate.mjs",
     "blender:export": "node scripts/blender-export.mjs",
-    "blender:watch": "node scripts/blender-watch.mjs"
+    "blender:watch": "node scripts/blender-watch.mjs",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "vite": "^8.3.6"
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
   },
   "dependencies": {
     "three": "^0.187.0"
