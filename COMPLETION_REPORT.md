@@ -1,14 +1,16 @@
 # Completion Report
 
-## Blender integration status
-- Blender installed and detected: COMPLETE (5.2.3 LTS)
-- Blender Python automation working: COMPLETE (create/validate/export scripts run)
-- Actual GLB export working: COMPLETE (53232-byte GLB)
-- Game model loading working: COMPLETE (blender car loads, 4 wheels, steering)
-- Live synchronization working: COMPLETE (version polling reloads model)
+## Premium upgrade
+- Five detailed Blender vehicle models: COMPLETE (sport, suv, truck, compact, racer exported and loaded)
+- PBR materials in GLB: COMPLETE (Blender Principled BSDF exports)
+- Wheel animation/steering: COMPLETE (4 wheels connected)
+- Audio system upgrade: IN PROGRESS (procedural layered synthesis, crossfading, tire/collision; no licensed recordings)
+- Live Blender sync: COMPLETE
 
-## Existing features preserved
-All baseline features remain; build passes.
+## Known limitations
+- Audio is synthesized, not recorded engine samples.
+- Models are procedural/low-mid detail, not hand-sculpted hero assets.
+- No licensed audio assets included.
 
 ## Build
 `npm run build` succeeds.

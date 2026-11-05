@@ -177,6 +177,7 @@ export class Car {
       this.speed *= -0.2;
       this.damage = Math.min(100, this.damage + Math.abs(this.speed) * 0.5);
       this.velocity.set(0, 0, 0);
+      if (this.game.audio && this.game.audio.playCollision) this.game.audio.playCollision(Math.abs(this.speed)*2);
     } else {
       this.position.copy(newPos);
     }
