@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { assetLoader } from '../assets/AssetLoader.js';
 import { CAR_MODELS } from '../assets/CarManifest.js';
-import { stepVehicle } from '../physics/VehiclePhysics.js';
+import { stepDynamics } from '../physics/VehicleDynamics.js';
 
 export const CAR_SPECS = {
   blender: { name:'Blender Test Vehicle', color:0x3a7bd5, maxSpeed:40, accel:16, brake:26, steer:2.0, mass:1300, fuel:100, handling:0.85 },
@@ -109,6 +109,7 @@ export class Car {
 
     // fuel consumption
     if (this.fuel > 0) this.fuel -= Math.abs(this.speed) * 0.0008 * dt * 60;
+    this._prevPos = this.position.clone();
     if (this.fuel < 0) this.fuel = 0;
 
     // input
@@ -137,53 +138,61 @@ export class Car {
 
     const params = {
       mass: spec.mass,
-      power: spec.accel * spec.mass * 0.6,
-      brakeForce: spec.brake * spec.mass * 0.5,
+      power: spec.accel * spec.mass * 0.25,
+      brakeForce: spec.brake * spec.mass * 0.4,
       wheelRadius: 0.35,
       wheelbase: 2.6,
       cgHeight: 0.5,
       trackWidth: 1.6,
       tireGrip: spec.handling * (sim ? 0.9 : 1.1),
-      tireStiffness: 6000,
-      corneringStiffness: 4000,
+      tireLongStiff: 6000,
+      tireLatStiff: 4000,
       dragCoeff: 0.35 * (sim ? 1.2 : 1.0),
       rollingResistance: 0.6,
       steerLimit: spec.steer * (sim ? 0.85 : 1.0),
       maxSpeed,
       drive: 'rwd',
-      wheelInertia: 1.2,
+      wheelInertia: 2.5,
+      suspStiffness: 18000,
+      suspDamping: 2500,
+      suspRestLength: 0.8,
+      suspMaxTravel: 0.2,
     };
 
-    const state = { speed: this.speed, heading: this.heading, yawRate: this.yawRate || 0, wheelOmegas: this.wheelOmegas || [0,0,0,0] };
-    const next = stepVehicle(state, { throttle, brake, steer: steerInput, handbrake: this.handbrake }, params, dt);
+    if (!this.dynState) {
+      this.dynState = { x: this.position.x, z: this.position.z, yaw: this.heading, vx: 0, vz: 0, yawRate: 0, wheels: [ { omega:0, susp:0, suspVel:0, load:0, contact:false, compression:0, slipRatio:0, slipAngle:0, Fx:0, Fy:0 }, { omega:0, susp:0, suspVel:0, load:0, contact:false, compression:0, slipRatio:0, slipAngle:0, Fx:0, Fy:0 }, { omega:0, susp:0, suspVel:0, load:0, contact:false, compression:0, slipRatio:0, slipAngle:0, Fx:0, Fy:0 }, { omega:0, susp:0, suspVel:0, load:0, contact:false, compression:0, slipRatio:0, slipAngle:0, Fx:0, Fy:0 } ] };
+    }
 
+    const groundHeight = (x, z) => 0;
+    const next = stepDynamics(this.dynState, { throttle, brake, steer: steerInput, handbrake: this.handbrake }, params, dt, groundHeight);
+
+    this.dynState = next;
+    this.position.x = next.x;
+    this.position.z = next.z;
+    this.heading = next.yaw;
     this.speed = next.speed;
-    if (this.speed > maxSpeed) this.speed = maxSpeed;
-    if (this.speed < -spec.maxSpeed * 0.35) this.speed = -spec.maxSpeed * 0.35;
-    this.heading = next.heading;
     this.yawRate = next.yawRate;
-    this.wheelOmegas = next.wheelOmegas;
-    this.steerAngle = next.steerAngle;
-    this.slip = Math.abs(next.slipRatio);
+    this.wheelOmegas = next.wheels.map(w => w.omega);
+    this.slip = next.slip;
+    this.suspOffsets = next.wheels.map(w => w.compression);
 
     // handbrake extra
     if (this.handbrake) this.speed *= 0.92;
 
-    // position update
-    const dir = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
-    this.velocity.copy(dir).multiplyScalar(this.speed);
-    const newPos = this.position.clone().addScaledVector(this.velocity, dt);
+    // steering angle for visuals
+    this.steerAngle = next.steerAngle || this.steerAngle;
 
-    // collision
-    const collided = this._collide(newPos, colliders);
-    if (collided) {
-      // bounce
+    // clamp
+    if (this.speed > maxSpeed) this.speed = maxSpeed;
+    if (this.speed < -spec.maxSpeed * 0.35) this.speed = -spec.maxSpeed * 0.35;
+
+    // collision check using previous position
+    // (position already updated by dynamics)
+    if (this._collide(this.position, colliders)) {
+      this.position.copy(this._prevPos || this.position);
       this.speed *= -0.2;
       this.damage = Math.min(100, this.damage + Math.abs(this.speed) * 0.5);
-      this.velocity.set(0, 0, 0);
       if (this.game.audio && this.game.audio.playCollision) this.game.audio.playCollision(Math.abs(this.speed)*2);
-    } else {
-      this.position.copy(newPos);
     }
 
     // keep on ground
