@@ -168,7 +168,9 @@ export function stepDynamics(state, input, params, dt, groundHeight = () => 0) {
   FxTotal -= rollingResistance * Math.sign(vx || 1) * mass * g * 0.01;
 
   // integrate
-  const ax = FxTotal / mass;
+  let ax = FxTotal / mass;
+  // reverse assist
+  if (throttle < 0 && speedAbs < 5) ax -= 3 * Math.abs(throttle);
   const az = FzTotal / mass;
   const alpha = torqueYaw / (yawInertia || (mass * 2.5));
 
@@ -197,7 +199,7 @@ export function stepDynamics(state, input, params, dt, groundHeight = () => 0) {
     wheels,
     steerAngle,
     slip,
-    speed: Math.hypot(newVx, newVz),
+    speed: newVx,
   };
 }
 
