@@ -6,6 +6,7 @@ import { CameraController } from '../camera/CameraController.js';
 import { World } from '../world/World.js';
 import { Car } from '../vehicles/Car.js';
 import { assetLoader } from '../assets/AssetLoader.js';
+import { assetLoader as coreAssetLoader } from '../core/AssetLoader.js';
 import { HUD } from '../ui/HUD.js';
 import { Menu } from '../ui/Menu.js';
 
@@ -63,6 +64,11 @@ export class Game {
     this.audio.init();
     this.hud = new HUD(this);
     this.menu = new Menu(this);
+    // loading manager progress
+    coreAssetLoader.manager.onProgress = (url, loaded, total) => {
+      const p = total > 0 ? loaded / total : 0;
+      this._setLoading(0.2 + p * 0.6, 'Loading assets...');
+    };
 
     this._setLoading(0.3, 'Building world...');
     await this._yield();
