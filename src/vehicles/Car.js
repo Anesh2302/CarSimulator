@@ -37,6 +37,10 @@ export class Car {
     this.damage = 0;
     this.boost = 1.0;
     this.boostCooldown = 0;
+    this.bodyColor = null;
+    this.headlightsOn = false;
+    this.headlightMeshes = [];
+    this.taillightMeshes = [];
     this.handbrake = false;
     this.onGround = true;
   }
@@ -101,6 +105,10 @@ export class Car {
   reset() {
     this.spawn(new THREE.Vector3(0, 1, 0));
   }
+  setBodyColor(hex) {
+    this.bodyColor = hex;
+    if (this.bodyMesh && this.bodyMesh.material) this.bodyMesh.material.color.setHex(hex);
+  }
 
   update(dt, input, colliders) {
     const spec = this.spec;
@@ -117,6 +125,7 @@ export class Car {
     if (input.left) steerInput = 1;
     if (input.right) steerInput = -1;
     this.handbrake = !!input.handbrake;
+    if (input.headlightsToggle) { input.headlightsToggle = false; this.headlightsOn = !this.headlightsOn; }
 
     // steering input
     // (steering angle computed in physics step)
@@ -131,6 +140,7 @@ export class Car {
     }
     if (this.fuel <= 0) throttle = 0;
     if (input.boost && this.boost > 0 && throttle > 0) { throttle *= 1.4; this.boost -= dt * 0.4; }
+    this.braking = brake > 0;
 
     this._updateGear();
 
@@ -243,6 +253,19 @@ export class Car {
       node.rotation.x -= this.speed * dt * 2;
       node.position.y = 0.35 + (this.suspOffsets[i] || 0);
     });
+    // lights
+    const brake = this.handbrake || (this.speed > 0 && false);
+    const braking = false; // placeholder: brighten taillights when braking (input not available here)
+    for (const m of this.taillightMeshes) {
+      if (m.material && m.material.emissive) {
+        m.material.emissiveIntensity = this.braking ? 3.0 : 1.0;
+      }
+    }
+    for (const m of this.headlightMeshes) {
+      if (m.material && m.material.emissive) {
+        m.material.emissiveIntensity = this.headlightsOn ? 3.0 : 0.2;
+      }
+    }
     const swNode = this.steeringNode || this.steeringWheelMesh;
     if (swNode) swNode.rotation.z = -this.steerAngle * 1.5;
   }
@@ -284,6 +307,19 @@ export class Car {
       this.steeringNode = find(manifest.nodes.steeringWheel);
       this.steeringWheelMesh = this.steeringNode;
       this.bodyMesh = find(manifest.nodes.body) || this.bodyMesh;
+      if (this.bodyMesh && this.bodyMesh.material) {
+        const c = this.bodyColor || this.spec.color;
+        this.bodyMesh.material.color.setHex(c);
+      }
+      // collect lights
+      this.headlightMeshes = [];
+      this.taillightMeshes = [];
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        const n = o.name.toLowerCase();
+        if (n.includes('headlight')) this.headlightMeshes.push(o);
+        if (n.includes('taillight')) this.taillightMeshes.push(o);
+      });
     }).catch(err => {
       console.warn('Model load failed, keeping procedural:', err);
     });

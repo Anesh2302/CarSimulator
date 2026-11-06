@@ -136,6 +136,7 @@ export class Game {
     } else {
       this.car.reset();
     }
+    if (this.progress.bodyColor) this.car.setBodyColor(parseInt(this.progress.bodyColor.replace('#',''),16));
     this.audio.resume();
     this.car.reset();
     // mode setup

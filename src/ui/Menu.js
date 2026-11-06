@@ -19,6 +19,8 @@ export class Menu {
     document.getElementById('btn-garage-select').onclick = () => {
       g.selectedCarId = this.selectedCar;
       g.progress.selectedCar = this.selectedCar;
+      const color = document.getElementById('set-color').value;
+      g.progress.bodyColor = color;
       SaveManager.saveProgress(g.progress);
       document.getElementById('garage').classList.add('hidden');
       this.show();

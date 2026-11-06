@@ -3,7 +3,7 @@ export class InputManager {
     this.state = {
       up:false, down:false, left:false, right:false,
       handbrake:false, boost:false,
-      camPressed:false, resetPressed:false, pausePressed:false, menuPressed:false, weatherPressed:false,
+      camPressed:false, resetPressed:false, pausePressed:false, menuPressed:false, weatherPressed:false, headlightsToggle:false,
     };
     this._keys = {};
     this._gp = { up:false, down:false, left:false, right:false, hb:false, boost:false, cam:false, reset:false, pause:false };
@@ -23,6 +23,7 @@ export class InputManager {
       if (e.code === 'KeyP') this.state.pausePressed = true;
       if (e.code === 'Escape') this.state.menuPressed = true;
       if (e.code === 'KeyV') this.state.weatherPressed = true;
+      if (e.code === 'KeyH') this.state.headlightsToggle = true;
     });
     window.addEventListener('keyup', e => {
       this._keys[e.code] = false;

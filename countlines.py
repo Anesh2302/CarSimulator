@@ -1,0 +1,1 @@
+print(len(open('dl_lines.txt').read().splitlines()))
