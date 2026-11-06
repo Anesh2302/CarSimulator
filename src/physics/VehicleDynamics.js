@@ -18,7 +18,7 @@ export function stepDynamics(state, input, params, dt, groundHeight = () => 0) {
     mass, power, brakeForce, wheelRadius, wheelbase, cgHeight,
     trackWidth, tireGrip, tireLongStiff, tireLatStiff, dragCoeff,
     rollingResistance, steerLimit, maxSpeed, drive, wheelInertia,
-    suspStiffness, suspDamping, suspRestLength, suspMaxTravel,
+    yawInertia, suspStiffness, suspDamping, suspRestLength, suspMaxTravel,
   } = params;
 
   const g = 9.81;
@@ -54,26 +54,31 @@ export function stepDynamics(state, input, params, dt, groundHeight = () => 0) {
     const gh = groundHeight(mountX, mountZ);
 
     // suspension compression: distance from mount to ground minus rest length
-    const mountHeight = bodyY + 0; // simplified
-    const wheelCenterHeight = mountHeight - (suspRestLength - wheels[i].susp);
-    const contactHeight = wheelCenterHeight - wheelRadius;
-    let compression = suspRestLength - (mountHeight - gh - wheelRadius);
-    if (compression < 0) compression = 0;
-    if (compression > suspMaxTravel) compression = suspMaxTravel;
+    const mountHeight = bodyY;
+    const requiredCompression = mountHeight - gh - wheelRadius;
+    let compression = 0;
+    let contact = false;
+    if (requiredCompression >= 0 && requiredCompression <= suspMaxTravel) {
+      compression = requiredCompression;
+      contact = true;
+    } else if (requiredCompression > suspMaxTravel) {
+      compression = suspMaxTravel;
+      contact = true;
+    }
     // spring-damper
     const suspVel = wheels[i].suspVel;
     const springForce = suspStiffness * compression;
     const damperForce = suspDamping * suspVel;
     const suspForce = springForce - damperForce;
-    wheels[i].suspVel += (suspForce / 50 - g) * dt; // approx
-    wheels[i].susp += wheels[i].suspVel * dt;
+    wheels[i].suspVel += (suspForce / 50 - g) * dt;
+    wheels[i].susp = compression;
     if (wheels[i].susp < 0) { wheels[i].susp = 0; wheels[i].suspVel = 0; }
     if (wheels[i].susp > suspMaxTravel) { wheels[i].susp = suspMaxTravel; wheels[i].suspVel = 0; }
 
-    const load = Math.max(0, suspForce);
+    const load = contact ? Math.max(0, suspForce) : 0;
     wheelLoads[i] = load;
     wheels[i].load = load;
-    wheels[i].contact = load > 1;
+    wheels[i].contact = contact;
     wheels[i].compression = wheels[i].susp;
   }
 
@@ -109,7 +114,8 @@ export function stepDynamics(state, input, params, dt, groundHeight = () => 0) {
     const longVel = wheelWorldVx * csa + wheelWorldVz * ssa;
     const latVel = -wheelWorldVx * ssa + wheelWorldVz * csa;
 
-    const slipRatio = computeSlipRatioLocal(w.omega, longVel, wheelRadius);
+    const predictedOmega = w.omega + (wheelTorque[i] / wheelInertia) * dt;
+    const slipRatio = computeSlipRatioLocal(predictedOmega, longVel, wheelRadius);
     const slipAngle = Math.atan2(latVel, Math.max(Math.abs(longVel), 0.1));
 
     // forces in wheel frame
@@ -164,7 +170,7 @@ export function stepDynamics(state, input, params, dt, groundHeight = () => 0) {
   // integrate
   const ax = FxTotal / mass;
   const az = FzTotal / mass;
-  const alpha = torqueYaw / (mass * 2.5); // approx inertia
+  const alpha = torqueYaw / (yawInertia || (mass * 2.5));
 
   const newVx = vx + ax * dt;
   const newVz = vz + az * dt;

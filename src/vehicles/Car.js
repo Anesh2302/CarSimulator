@@ -138,7 +138,7 @@ export class Car {
 
     const params = {
       mass: spec.mass,
-      power: spec.accel * spec.mass * 0.25,
+      power: spec.accel * spec.mass * 0.6,
       brakeForce: spec.brake * spec.mass * 0.4,
       wheelRadius: 0.35,
       wheelbase: 2.6,
